@@ -1,0 +1,8 @@
+.DS_Store
+.idea/
+
+target/
+Cargo.lock
+**/*.rs.bk
+
+swagger_sandbox/
