@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "swagger_models",
-    "swagger_sandbox"
+    "swagger_sandbox",
+    "swagger_common"
 ]
