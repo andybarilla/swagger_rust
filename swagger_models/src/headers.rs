@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use json::JsonValue;
 
 // TODO for now just store numbers as strings
 pub type Number = String;
@@ -19,6 +20,7 @@ pub struct Swagger {
     pub security: Option<SecurityRequirements>,
     pub tags: Option<Tags>,
     pub external_docs: Option<ExternalDocumentation>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct Info {
@@ -28,17 +30,20 @@ pub struct Info {
     pub contact: Option<Contact>,
     pub license: Option<License>,
     pub version: String,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct Contact {
     pub name: Option<String>,
     pub url: Option<String>,
     pub email: Option<String>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct License {
     pub name: Option<String>,
     pub url: Option<String>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub enum Scheme {
@@ -59,6 +64,27 @@ impl Scheme {
     }
 }
 
+
+pub enum CollectionFormat {
+    Csv,
+    Ssv,
+    Tsv,
+    Pipes,
+    Multi
+}
+
+impl CollectionFormat {
+    pub fn as_str(&self) -> &str {
+        match self {
+            &CollectionFormat::Csv => "csv",
+            &CollectionFormat::Ssv => "ssv",
+            &CollectionFormat::Tsv => "tsv",
+            &CollectionFormat::Pipes => "pipes",
+            &CollectionFormat::Multi => "multi"
+        }
+    }
+}
+
 pub type Schemes = Vec<Scheme>;
 
 pub type Consumes = Vec<String>;
@@ -73,7 +99,7 @@ pub struct SecurityRequirement {
 
 pub type SecurityRequirements = Vec<SecurityRequirement>;
 
-pub struct Path {
+pub struct PathItem {
     pub ref_: Option<String>,
     pub get: Option<Operation>,
     pub put: Option<Operation>,
@@ -83,6 +109,7 @@ pub struct Path {
     pub options: Option<Operation>,
     pub patch: Option<Operation>,
     pub parameters: Option<ParametersOrReferences>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub type ParametersOrReferences = Vec<ParameterOrReference>;
@@ -92,7 +119,7 @@ pub enum ParameterOrReference {
     Reference(Reference),
 }
 
-pub type Paths = HashMap<String, Path>;
+pub type Paths = ExtendedHashMap;
 
 pub type Requirements = HashMap<String, Vec<String>>;
 
@@ -109,6 +136,7 @@ pub struct Operation {
     pub security: Option<SecurityRequirements>,
     pub external_docs: Option<ExternalDocumentation>,
     pub deprecated: Option<bool>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct Response {
@@ -116,9 +144,10 @@ pub struct Response {
     pub schema: Option<Schema>,
     pub headers: Option<Headers>,
     pub examples: Option<Examples>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
-pub type Responses = HashMap<String, Response>;
+pub type Responses = ExtendedHashMap;
 
 pub type ResponsesDefinitions = HashMap<String, Response>;
 
@@ -127,17 +156,10 @@ pub type Security = Vec<HashMap<String, Vec<String>>>;
 pub struct ExternalDocumentation {
     pub description: Option<String>,
     pub url: String,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
-pub struct Model {}
-
-pub struct Property {}
-
-pub struct Example {
-    // TODO this could be anything
-}
-
-pub type Examples = HashMap<String, Example>;
+pub type Examples = HashMap<String, JsonValue>;
 
 pub type Definitions = HashMap<String, Schema>;
 
@@ -167,6 +189,7 @@ pub struct Schema {
     pub read_only: Option<bool>,
     pub xml: Option<XMLObject>,
     pub external_docs: Option<ExternalDocumentation>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct Reference {
@@ -179,6 +202,7 @@ pub struct XMLObject {
     pub prefix: Option<String>,
     pub attribute: Option<bool>,
     pub wrapper: Option<bool>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub type SecurityDefinitions = HashMap<String, SecurityScheme>;
@@ -192,9 +216,10 @@ pub struct SecurityScheme {
     pub authorization_url: String,
     pub token_url: String,
     pub scopes: Scopes,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
-pub type Scopes = HashMap<String, String>;
+pub type Scopes = ExtendedHashMap;
 
 pub struct ParameterBody {
     pub name: String,
@@ -202,6 +227,7 @@ pub struct ParameterBody {
     pub description: Option<String>,
     pub required: Option<bool>,
     pub schema: Schema,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct ParameterOther {
@@ -213,7 +239,7 @@ pub struct ParameterOther {
     pub format: Option<String>,
     pub allow_empty_value: Option<bool>,
     pub items: Option<Items>,
-    pub collection_format: Option<String>,
+    pub collection_format: Option<CollectionFormat>,
     pub default: Option<String>,
     pub maximum: Option<Number>,
     pub exclusive_maximum: Option<bool>,
@@ -227,6 +253,7 @@ pub struct ParameterOther {
     pub unique_items: Option<bool>,
     pub enum_: Option<Vec<String>>,
     pub multiple_of: Option<Number>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub enum Parameter {
@@ -237,14 +264,20 @@ pub enum Parameter {
 pub type Parameters = Vec<Parameter>;
 
 pub type ParametersDefinitions = HashMap<String, Parameter>;
+pub enum StringOrVendorExtension {
+    String(String),
+    VendorExtension(JsonValue)
+}
+pub type VendorExtensions = HashMap<String, JsonValue>;
+pub type ExtendedHashMap = HashMap<String, StringOrVendorExtension>;
 
-pub type VendorExtensions = HashMap<String, String>;
 pub type Tags = Vec<Tag>;
 
 pub struct Tag {
     pub name: String,
     pub description: Option<String>,
     pub external_docs: Option<ExternalDocumentation>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub type Headers = HashMap<String, Header>;
@@ -254,7 +287,7 @@ pub struct Header {
     pub description: String,
     pub format: Option<String>,
     pub items: Option<Items>,
-    pub collection_format: Option<String>, // TODO enum this?
+    pub collection_format: Option<CollectionFormat>,
     pub default: Option<String>,
     pub maximum: Option<Number>,
     pub exclusive_maximum: Option<bool>,
@@ -268,13 +301,14 @@ pub struct Header {
     pub unique_items: Option<bool>,
     pub enum_: Option<Vec<String>>,
     pub multiple_of: Option<Number>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
 
 pub struct Items {
     pub type_: String,
     pub format: Option<String>,
     pub items: Option<Box<Items>>,
-    pub collection_format: Option<String>, // TODO enum this?
+    pub collection_format: Option<CollectionFormat>,
     pub default: Option<String>,
     pub maximum: Option<Number>,
     pub exclusive_maximum: Option<bool>,
@@ -288,4 +322,5 @@ pub struct Items {
     pub unique_items: Option<bool>,
     pub enum_: Option<Vec<String>>,
     pub multiple_of: Option<Number>,
+    pub vendor_extensions: Option<VendorExtensions>
 }
